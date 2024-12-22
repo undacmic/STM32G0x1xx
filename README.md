@@ -20,7 +20,7 @@
     The **COM LED** should also be **green**.
     A problem with USB enumeration is indicated by a blinking red **COM LED**.
 
-    To see more speicif information about the board you can execute the following command:
+    To see more specific information about the board you can execute the following command:
     <pre>
     st-info --probe
 
@@ -35,12 +35,12 @@
 
 ## Startup Script
 
-### ARM Cortex-M0+ Reset Behaviour
+### ARM Cortex-M0+ Reset Behavior
 
-The Cortex-M0+ has the following reset behaviour according to this well documented presentation [here](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://community.arm.com/support-forums/f/soc-design-and-simulation-forum/54006/understanding-reset-sequence-cortex-m0&ved=2ahUKEwjPjMOM3riKAxUfiv0HHXUTGkEQFnoECBcQAQ&usg=AOvVaw0FCZVU6DNUNLWvWUzluuz3):
+The Cortex-M0+ has the following reset behavior according to this well documented presentation [here](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://community.arm.com/support-forums/f/soc-design-and-simulation-forum/54006/understanding-reset-sequence-cortex-m0&ved=2ahUKEwjPjMOM3riKAxUfiv0HHXUTGkEQFnoECBcQAQ&usg=AOvVaw0FCZVU6DNUNLWvWUzluuz3):
   - Reads the **Initial SP**, also called the **MSP (Main Stack Pointer)** 
   - Reads the **reset vector**
-  - Branches to the starting of the programme execution address (**reset handler**)
+  - Branches to the starting of the program execution address (**reset handler**)
   - Subsequently executes program instructions (TBD in the `Reset_Handler` function)
 
 ### 
@@ -56,7 +56,10 @@ The Cortex-M0+ has the following reset behaviour according to this well document
   2. Move the **MSP** to the **SP (Stack Pointer**) using inline assembly and `LDR` instruction _(see page 141 from ARMv6-m Architecture Manual)_. It uses the `_estack` symbol defined in the linker script.
 
   ```c
-  __asm ("LDR SP, =_estack");
+  __asm (
+        "LDR R0, =_estack       \n\t"
+        "MOV SP, R0             \n\t"
+    );
   ```
   3. Initialize the `.data` section. In order to use symbols from the ``.data`` section, the startup code needs to copy the data from ``LMA (Flash)`` to ``VMA (SRAM)`` to make sure that all C code can access the initialized data. It uses the `_data_start`, `data_end` symbols for the virtual adresses and `_sidata` symbol for the start address of the LMA of the `.data` section.
 
@@ -70,13 +73,16 @@ The Cortex-M0+ has the following reset behaviour according to this well document
 
   ```c
     __asm (
-        "LDR R0, =_bss_start        \n\t"
-        "LDR R1, =_bss_end          \n\t"
-        "MOV R2, #0                 \n\t"
-        "loop_zero:                 \n\t"
-        "   CMP 	RO, R1            \n\t"
-        "   STRLT	R2, [R0], #4      \n\t"
-        "   BLT 	loop_zero         \n\t"
+        "LDR R0, =_bss_start      \n\t"
+        "LDR R1, =_bss_end        \n\t"
+        "MOV R2, #0               \n\t"
+        "loop_zero:               \n\t"
+        "   CMP 	R0, R1          \n\t"
+        "   BGE 	end_loop        \n\t"
+        "   STR	R2, [R0]        \n\t"
+        "   ADD   R0, R0, #4      \n\t"
+        "   B 	loop_zero       \n\t"
+        "end_loop:                \n\t"
     );
   ```
 ### `System_Init`
@@ -87,7 +93,7 @@ The formula by which the output f<sub>PLLR</sub> is calculated is the following:
 f<sub>PLLR</sub> = ((f<sub>PLLIN</sub> / M) * N) / R,
 where:
   - f<sub>PLLIN</sub> is the frequency of HSI16 clock source of 16 MHz
-  - M, N, R are configurable parameters using PLLCFGR register
+  - M, N and R are configurable parameters using PLLCFGR register
 </pre>
 
 
