@@ -1,11 +1,10 @@
-ENTRY(Rest_Handler)
+ENTRY(Reset_Handler)
 
 MEMORY {
     FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 512K   
     SRAM  (xrw)     : ORIGIN = 0x20000000, LENGTH = 144K
 }
 
-OUTPUT_FORMAT ("elf32-littlearm")
 
 SECTIONS {
     .isr_vector : {

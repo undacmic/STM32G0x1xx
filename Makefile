@@ -3,7 +3,7 @@ LD = arm-none-eabi-ld
 
 LDSCRIPT = ./STM32G0B1RE.ld
 
-CPUFLAGS = -mcpu=cortex-m0 -mthumb
+CPUFLAGS = -mcpu=cortex-m0 -mthumb -nostdlib
 CFLAGS = -O -g -Wall
 LDFLAGS = -Xlinker -Map=program.map -nostartfiles -T $(LDSCRIPT)
 
@@ -16,12 +16,13 @@ LIBGCC := $(word 1, $(wildcard 					\
 		   UNKNOWN))
 
 all: program.hex
+	    st-flash --format ihex write $<
 
 %.o: %.c
 		$(CC) $(CPUFLAGS) -c $< -o $@
 
-%.elf: startup_stm32g0b1xx.o main.o
-		$(CC) $^ $(LIBGCC) ${LDFLAGS} -o $@
+%.elf: main.o startup_stm32g0b1xx.o
+		$(CC) $^ ${LDFLAGS} -o $@
 		arm-none-eabi-size $@
 
 %.hex: %.elf
